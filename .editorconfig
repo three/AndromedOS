@@ -1,0 +1,20 @@
+# Editor Configuration
+# See http://editorconfig.org/
+
+root = true
+
+[*]
+# Unix-Style newlines
+end_of_line = lf
+insert_final_newline = true
+
+# Indendation and Whitespace
+indent_style = space
+indent_size = 4
+trim_trailing_whitespace = true
+
+# Max line length
+max_line_length = 80
+
+[Makefile]
+indent_style = tab
