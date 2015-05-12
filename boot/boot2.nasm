@@ -171,13 +171,10 @@ start_32:
     mov dword [0xB809C], 0xF032F033 ; Print "32" at top right corner
 
     ; Copy Kernel to its proper place
+    mov cx, 0x1000
     mov esi, 0x1000
-.loop_copy:
-    mov dword eax, [esi]
-    mov dword [esi+0xFF000], eax
-    add esi, 4
-    cmp esi, 0x2000
-    jng .loop_copy
+    mov edi, 0x100000
+    rep movsd
 
     jmp long 0x100000
     jmp Hang_32
