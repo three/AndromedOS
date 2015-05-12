@@ -17,9 +17,7 @@ debug: build
 	gdb -x gdbinit
 
 clean:
-	rm **.img || true
-	rm **.log || true
-	rm **.o   || true
+	find . -type f -regextype posix-extended -regex ".*\.(img|log|o)$$" -delete
 
 # Bootloader
 
