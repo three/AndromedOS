@@ -10,12 +10,6 @@
     loading the bootloader into 0x100000, Boot2 should check the memory map
     to make sure this is safe.
 
-- Better Documentation
-    It's not clear from the code what the layout of memory is supposed to be or
-    why things are done a certain way, such as why reloading Boot1, loading
-    Boot2 and loading the kernel are done at the same time, and then the kernel
-    is copied over once in protected mode.
-
 - Better Makefile
     The Makefile is very redundant and will become increasingly more redundant
     as more .c file are added. A better way to make the project should be
