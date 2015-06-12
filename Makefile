@@ -2,11 +2,15 @@ QEMU = qemu-system-i386
 QEMUopts = -usb -hda andromedos.img
 QEMUdebug = -S -s $(QEMUopts)
 
-CC=gcc
-CFLAGS=-m32 -ffreestanding -nostdlib -lgcc -nostdinc -Wall
+CC=i686-elf-gcc
+CFLAGS=-m32 -g -ffreestanding -nostdlib -lgcc -Wall
+
+LD=i686-elf-ld
 
 KOBJS=entry.o main.o memory.o
 KDEPS=$(addprefix kernel/, $(KOBJS))
+
+export PATH := deps/bin:$(PATH)
 
 # Directives
 
@@ -43,7 +47,7 @@ boot/boot2.img: boot/boot2.nasm
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 kernel/kernel.img: kernel/link.ld $(KDEPS)
-	ld -T kernel/link.ld -o kernel/kernel.img $(KDEPS)
+	$(LD) -T kernel/link.ld -o kernel/kernel.img $(KDEPS)
 
 # Final Processing
 

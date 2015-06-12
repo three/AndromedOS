@@ -14,8 +14,8 @@ details.
 AndromedOS makes use of the following dependencies:
 
 - Netwide Assembler (nasm, 2.10.09 tested)
-- GNU Compiler Collection (gcc, 4.8.2 tested)
-- GNU Binutils (binutils, 2.24 tested)
+- GNU Compiler Collection (gcc, 5.1.0 tested, see cross-compilation)
+- GNU Binutils (binutils, 2.24 tested, see cross-compilation)
 - QEMU i386 Emulator (2.0.0 tested, used for running/testing)
 - GNU Debugger (gdb, 7.7.1 tested, used for testing)
 - GNU Make (make, 3.81 tested)
@@ -26,6 +26,15 @@ built as `andromedos.img`.
 
 Use `make debug` to start QEMU and a gdb instance that will automatically
 connect to QEMU and break after the BIOS initializes.
+
+### Cross Compilation
+
+When using make to build AndromedOS, make will add `./deps/bin` to the beginning
+of its `PATH`. Instead of normal GCC and Binutil executables, these command will
+be prefixed with `i686-elf-`. This setup allows you to use a cross compiler to
+build AndromedOS without affecting the rest of your system. If you want to use a
+compiler already on your system of a different name, make symbolic links to the
+correct destinations.
 
 ## Contributing
 
