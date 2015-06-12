@@ -1,3 +1,4 @@
 *.o
 *.img
+kernel/debug.elf
 deps/*

@@ -20,7 +20,7 @@ build: andromedos.img
 run: build
 	$(QEMU) $(QEMUopts)
 
-debug: build
+debug: build kernel/debug.elf
 	setsid $(QEMU) $(QEMUdebug) & true
 	gdb -x gdbinit
 
@@ -48,6 +48,11 @@ boot/boot2.img: boot/boot2.nasm
 
 kernel/kernel.img: kernel/link.ld $(KDEPS)
 	$(LD) -T kernel/link.ld -o kernel/kernel.img $(KDEPS)
+
+# There's probably a better way to do this that takes into account the linker
+# file, but this is good enough for now.
+kernel/debug.elf: $(KDEPS)
+	$(LD) -r -o kernel/debug.elf $(KDEPS)
 
 # Final Processing
 
