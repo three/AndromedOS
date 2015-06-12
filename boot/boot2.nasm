@@ -29,7 +29,7 @@ start:
 .MemSuccess:
 
     ; Load GDT
-    call LoadTempGDT
+    call LoadGDT
     jnc .GDTSuccess
     mov si, error_GDT
     call Print
@@ -126,7 +126,7 @@ DetectUpperMemory:
     stc
     ret
 
-LoadTempGDT:
+LoadGDT:
     ; Sets up a temporary GDT before (necessary before entering protected mode)
     ;  Sets carry flag if error (should never happen)
     lgdt [gdt_desc]
@@ -175,6 +175,11 @@ start_32:
     mov esi, 0x1000
     mov edi, 0x100000
     rep movsd
+
+    ; Setup 32-bit segment registers
+    mov ax, 0x10
+    mov ds, ax
+    mov ss, ax
 
     jmp long 0x100000
     jmp Hang_32
