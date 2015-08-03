@@ -22,8 +22,9 @@ drive db 0
 
 diskpacket:
     db 0x10, 0 ; Header
-    dw 0x6 ; 16 sectors
+    dw 0x10 ; 16 sectors
     dw 0x600
+    dw 0x0
     dq 0
 
 ; Text

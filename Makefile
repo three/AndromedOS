@@ -43,7 +43,7 @@ boot/boot2.img: boot/boot2.nasm
 %.o: %.s
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-%.o: %.c
+%.o: %.c kernel/*.h
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 kernel/kernel.img: kernel/link.ld $(KDEPS)
@@ -56,5 +56,6 @@ kernel/debug.elf: $(KDEPS)
 
 # Final Processing
 
-andromedos.img: boot/boot.img kernel/kernel.img
+andromedos.img: boot/boot.img kernel/kernel.img scripts/postprocess.py
 	cat boot/boot.img kernel/kernel.img >andromedos.img
+	python3 scripts/postprocess.py andromedos.img
