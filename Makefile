@@ -3,11 +3,11 @@ QEMUopts = -usb -hda andromedos.img
 QEMUdebug = -S -s $(QEMUopts)
 
 CC=i686-elf-gcc
-CFLAGS=-m32 -g -ffreestanding -nostdlib -lgcc -Wall
+CFLAGS=-m32 -g -ffreestanding -nostdlib -lgcc -Wall -Wextra
 
 LD=i686-elf-ld
 
-KOBJS=entry.o main.o memory.o terminal.o
+KOBJS=entry.o main.o memory.o terminal.o general.o
 KDEPS=$(addprefix kernel/, $(KOBJS))
 
 export PATH := deps/bin:$(PATH)

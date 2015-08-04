@@ -10,10 +10,11 @@
     loading the bootloader into 0x100000, Boot2 should check the memory map
     to make sure this is safe.
 
-- Better Makefile
-    The Makefile is very redundant and will become increasingly more redundant
-    as more .c file are added. A better way to make the project should be
-    implemented.
-
 - Continue 32bit code
     This includes proper keyboard input, proper text output, loading IVT, etc.
+
+- Reorganize terminal module
+    The terminal module is inconsistent in how it writes to screen for different
+    logging functions. A standard where logging works by passing position in and
+    retrieving from function of memsafe logging should be adopted before start
+    of shell.

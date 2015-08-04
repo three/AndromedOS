@@ -3,8 +3,10 @@
  */
 #include "terminal.h"
 #include "memory.h"
+#include "general.h"
 
 #include <stdint.h>
+#include <stdarg.h>
 
 #define TERM_VIDMEM_START (void *)0xB8000
 #define TERM_VIDMEM_END   (void *)0xB8FA0
@@ -46,6 +48,11 @@ uint16_t *terminal_maskedwrite(char *str, uint16_t mask, uint16_t *pos)
         return pos;
 }
 
+uint16_t *terminal_putchars(char *str, uint16_t *pos)
+{
+    return terminal_maskedwrite(str, TERM_MSAFE_COLORMASK, pos);
+}
+
 void *terminal_findchar(char character)
 {
     uint16_t *c = TERM_VIDMEM_START;
@@ -61,6 +68,19 @@ void *terminal_findchar(char character)
     return 0;
 }
 
+uint16_t *terminal_contwrite()
+{
+    uint16_t *b = terminal_findchar( TERM_MSAFE_ENDBARRIER );
+    *b = TERM_MSAFE_COLORMASK | TERM_MSAFE_BARRIER;
+    return ++b;
+}
+
+uint16_t *terminal_stopwrite(uint16_t *pos)
+{
+    *pos = TERM_MSAFE_COLORMASK | TERM_MSAFE_ENDBARRIER;
+    return ++pos;
+}
+
 void static *terminal_strcpy( char *from, char *to ) {
     // Private, other modules should use memory_strcpy instead
     while ( *from ) {
@@ -68,6 +88,38 @@ void static *terminal_strcpy( char *from, char *to ) {
         to++; from++;
     }
     return from;
+}
+
+uint16_t *terminal_base16write(char b, uint16_t *pos)
+{
+    uint16_t text = general_base16ify(b);
+    char c1, c2;
+    c1 = (text&0x00FF);
+    c2 = (text&0xFF00)>>8;
+
+    *pos = TERM_MSAFE_COLORMASK | c1; pos++;
+    *pos = TERM_MSAFE_COLORMASK | c2; pos++;
+
+    return pos;
+}
+
+int terminal_logint(int d)
+{
+    char b1, b2, b3, b4;
+    b1 = (d&0x000000FF);
+    b2 = (d&0x0000FF00)>>8;
+    b3 = (d&0x00FF0000)>>16;
+    b4 = (d&0xFF000000)>>24;
+
+    uint16_t *pos = terminal_contwrite();
+    pos = terminal_putchars("0x",pos);
+    pos = terminal_base16write(b4, pos);
+    pos = terminal_base16write(b3, pos);
+    pos = terminal_base16write(b2, pos);
+    pos = terminal_base16write(b1, pos);
+
+    terminal_stopwrite((uint16_t *)pos);
+    return 0;
 }
 
 void terminal_init()
