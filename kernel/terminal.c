@@ -81,7 +81,7 @@ uint16_t *terminal_stopwrite(uint16_t *pos)
     return ++pos;
 }
 
-void static *terminal_strcpy( char *from, char *to ) {
+static void *terminal_strcpy( char *from, char *to ) {
     // Private, other modules should use memory_strcpy instead
     while ( *from ) {
         *to = *from;

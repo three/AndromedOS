@@ -26,8 +26,6 @@ uint16_t general_base16ify(uint8_t dbyte)
 // Standard Functions
 //  (behavior should match that of standard library)
 
-typedef long size_t;
-
 size_t strlen(char *str)
 {
     char *end = str;

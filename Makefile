@@ -1,5 +1,5 @@
 QEMU = qemu-system-i386
-QEMUopts = -usb -hda andromedos.img
+QEMUopts = -usb -drive file=andromedos.img,media=disk,format=raw
 QEMUdebug = -S -s $(QEMUopts)
 
 CC=i686-elf-gcc
