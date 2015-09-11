@@ -1,6 +1,11 @@
 QEMU = qemu-system-i386
 QEMUopts = -usb -drive file=andromedos.img,media=disk,format=raw
-QEMUdebug = -S -s $(QEMUopts)
+define QEMUdebug =
+	-S -s \
+	-chardev file,path=seabios.log,id=seabios \
+	-device isa-debugcon,iobase=0x402,chardev=seabios \
+	$(QEMUopts)
+endef
 
 CC=i686-elf-gcc
 CFLAGS=-m32 -g -ffreestanding -nostdlib -lgcc -Wall -Wextra
