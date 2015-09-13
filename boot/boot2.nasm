@@ -89,40 +89,73 @@ FlipA20:
     ret
 
 DetectUpperMemory:
-    ; Detect Upper Memory using BiOS interrupt
+    ; Detect Upper Memory using e820 BIOS call
     ;  No input
-    ;  Stores memory list at 0x1000 (up to 0x2000)
-    ;  Carry flag set on error, BiOS errorcode in AH.
+    ;  Stores memory list at 0x30000 (not past 0x40000)
+    ; Carry flag set on error, BIOS errorcode in AH
 
     ; Initialization
     xor ebx, ebx
-    mov edx, 0x534D4150
-    mov eax, 0xE820
-    mov ecx, 0x18 ;24 bytes
-    xor bp, bp ;Entry count
-    mov di, 0x30000 ;Buffer
+    mov ax, 0x3000
+    mov es, ax
+    xor di, di
+
+.call_e820:
+    ; Set registers (assume these are trashed)
+    mov edx, 0x534D4150 ; Magic Number
+    mov eax, 0xe820 ; BIOS code
+    mov ecx, 24 ; Always ask for 24 bytes
+
+    ; Zero where memory map should go
+    mov dword [es:di],    0
+    mov dword [es:di+4],  0
+    mov dword [es:di+8],  0
+    mov dword [es:di+12], 0
+    mov dword [es:di+16], 0
+    mov dword [es:di+20], 1 ; Ensure valid ACPI code
+
+    ; Clear Carry Flag
     clc
 
-    ; First Call
-    int 0x15
-    jc .failMem
-    cmp eax, 0x534D4150
-    jne .failMem
+    ; Make BIOS call
+    int 15h
 
-    ; Subsequent Calls
-.call_e820:
-    mov eax, 0xe820
-    mov ecx, 0x18
-    inc bp
-    add di, 0x18
-    int 0x15
+    ; If carry flag is set, function is done
+    ;  (this could be an error, eax must be checked)
     jc .done
 
+    ; If EBX == 0, function completed successfully
+    test ebx, ebx
+    je .done
+
+    ; Make sure the count is not too large
+    add di, 24
+    cmp bp, 1300
+    jg .large
+
+    ; Do it again
+    jmp .call_e820
+
+.large:
+    ; Set "too large" flag
+    mov eax, [0x38000]
+    or eax, 0x1
+    mov [0x38000], eax
+
+    ; return as "success" (let kernel deal with it)
+    clc
+    ;jmp .done ; Let it fall through
+
 .done:
+    ; If eax == Magic, function exited successfully
+    cmp eax, 0x534D4150
+    jne .fail
     clc
     ret
 
-.failMem:
+.fail:
+    ; Error code will already be in ah from BIOS
+    ; Call count will be in bp
     stc
     ret
 
