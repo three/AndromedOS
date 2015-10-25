@@ -30,7 +30,8 @@ debug: build kernel/debug.elf
 	gdb -x gdbinit
 
 clean:
-	find . -type f -regextype posix-extended -regex ".*\.(img|log|o)$$" -delete
+	find . -type f -regextype posix-extended \
+		-regex ".*\.(img|log|o|gz)$$" -delete
 
 # Bootloader
 

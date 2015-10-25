@@ -1,5 +1,6 @@
 *.o
 *.img
 *.log
+*.gz
 kernel/debug.elf
 deps/*
