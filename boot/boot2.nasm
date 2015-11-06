@@ -203,16 +203,18 @@ BITS 32
 start_32:
     mov dword [0xB809C], 0xF032F033 ; Print "32" at top right corner
 
+    ; Setup 32-bit segment registers
+    mov ax, 0x10
+    mov ds, ax
+    mov ss, ax
+    xor ax, ax
+    mov es, ax
+
     ; Copy Kernel to its proper place
     mov cx, 0x1000
     mov esi, 0x1000
     mov edi, 0x100000
     rep movsd
-
-    ; Setup 32-bit segment registers
-    mov ax, 0x10
-    mov ds, ax
-    mov ss, ax
 
     jmp long 0x100000
     jmp Hang_32
