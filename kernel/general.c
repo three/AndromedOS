@@ -5,22 +5,16 @@
 
 #include <stdint.h>
 
-uint16_t general_base16ify(uint8_t dbyte)
+void outb(uint16_t port, uint8_t val)
 {
-    // Converts dbyte into two bytes of ASCII base16
-    uint8_t c1, c2;
-    c1 = (dbyte & 0x0F);
-    c2 = (dbyte & 0xF0) >> 4;
-    c1 += 48; c2 += 48;
+    asm volatile("outb %0, %1" : : "a"(val), "Nd"(port) );
+}
 
-    if (c1 > 57) {
-        c1 += 7;
-    }
-    if (c2 > 57) {
-        c2 += 7;
-    }
-
-    return (c1 << 8)|c2;
+uint8_t inb(uint16_t port)
+{
+    uint8_t r;
+    asm volatile("inb %1, %0" : "=a"(r) : "Nd"(port) );
+    return r;
 }
 
 // Standard Functions

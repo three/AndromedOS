@@ -1,163 +1,198 @@
 /*
  * terminal.c
+ *
+ * Handles IO
  */
 #include "terminal.h"
 #include "memory.h"
 #include "general.h"
 
 #include <stdint.h>
-#include <stdarg.h>
 
-#define TERM_VIDMEM_START (void *)0xB8000
-#define TERM_VIDMEM_END   (void *)0xB8FA0
-#define TERM_VIDMEM_SIZE          0x00FA0
+#define TERM_VIDMEM_START ((terminal_char *)0xB8000)
+#define TERM_VIDMEM_END   ((terminal_char *)0xB8FA0)
+#define TERM_VIDMEM_SIZE                    0x00FA0
+#define TERM_VIDMEM_WIDTH   80
+#define TERM_VIDMEM_HEIGHT  25
 
-#define TERM_MSAFE_BARRIER 16
-#define TERM_MSAFE_ENDBARRIER 17
-#define TERM_MSAFE_COLORMASK 0x0F00
+//
+// Helper Functions
+//
 
-void terminal_simplewrite(char *str, int pos)
+static int getpos(int x, int y)
 {
-    uint16_t * mpos = TERM_VIDMEM_START + pos;
-    int spos = 0;
-    while ( str[spos] )
-    {
-        if ( mpos > (uint16_t *)TERM_VIDMEM_END )
-            mpos = TERM_VIDMEM_START;
-        *mpos = TERM_MSAFE_COLORMASK | str[spos];
-        spos++; mpos++;
-    }
+    if ( x>=TERM_VIDMEM_WIDTH || x<0 ||y>=TERM_VIDMEM_HEIGHT || y<0 )
+        return -1;
+    return TERM_VIDMEM_WIDTH*y + x;
 }
 
-uint16_t *terminal_maskedwrite(char *str, uint16_t mask, uint16_t *pos)
-{
-    int offset = 0;
-    uint16_t * const e = TERM_VIDMEM_END;
-
-    while ( str[offset] )
-    {
-        while ( pos >= e )
-            pos = TERM_VIDMEM_START;
-        *pos = mask | str[offset];
-        pos++; offset++;
-    }
-
-    if ( pos >= e )
-        return TERM_VIDMEM_START;
-    else
-        return pos;
-}
-
-uint16_t *terminal_putchars(char *str, uint16_t *pos)
-{
-    return terminal_maskedwrite(str, TERM_MSAFE_COLORMASK, pos);
-}
-
-void *terminal_findchar(char character)
-{
-    uint16_t *c = TERM_VIDMEM_START;
-    uint16_t *e = TERM_VIDMEM_END;
-    while ( c < e )
-    {
-        if ( (char)(*c&0xFF) == character )
-        {
-            return c;
-        }
-        c++;
-    }
-    return 0;
-}
-
-uint16_t *terminal_contwrite()
-{
-    uint16_t *b = terminal_findchar( TERM_MSAFE_ENDBARRIER );
-    *b = TERM_MSAFE_COLORMASK | TERM_MSAFE_BARRIER;
-    return ++b;
-}
-
-uint16_t *terminal_stopwrite(uint16_t *pos)
-{
-    *pos = TERM_MSAFE_COLORMASK | TERM_MSAFE_ENDBARRIER;
-    return ++pos;
-}
-
-static void *terminal_strcpy( char *from, char *to ) {
-    // Private, other modules should use memory_strcpy instead
-    while ( *from ) {
-        *to = *from;
-        to++; from++;
-    }
-    return from;
-}
-
-uint16_t *terminal_base16write(char b, uint16_t *pos)
-{
-    uint16_t text = general_base16ify(b);
-    char c1, c2;
-    c1 = (text&0x00FF);
-    c2 = (text&0xFF00)>>8;
-
-    *pos = TERM_MSAFE_COLORMASK | c1; pos++;
-    *pos = TERM_MSAFE_COLORMASK | c2; pos++;
-
-    return pos;
-}
-
-int terminal_logint(int d)
-{
-    char b1, b2, b3, b4;
-    b1 = (d&0x000000FF);
-    b2 = (d&0x0000FF00)>>8;
-    b3 = (d&0x00FF0000)>>16;
-    b4 = (d&0xFF000000)>>24;
-
-    uint16_t *pos = terminal_contwrite();
-    pos = terminal_putchars("0x",pos);
-    pos = terminal_base16write(b4, pos);
-    pos = terminal_base16write(b3, pos);
-    pos = terminal_base16write(b2, pos);
-    pos = terminal_base16write(b1, pos);
-
-    terminal_stopwrite((uint16_t *)pos);
-    return 0;
-}
+//
+// Basic terminal API
+//
 
 void terminal_init()
 {
-    // Clear the Screen
-    volatile uint16_t *c = TERM_VIDMEM_START;
-    volatile uint16_t *e = TERM_VIDMEM_END;
-    while (c < e)
+    for (int p=0;p<TERM_VIDMEM_SIZE;p++)
     {
-        *c = TERM_MSAFE_COLORMASK | 0;
-        c++;
+        TERM_VIDMEM_START[p] = 0xFF00;
     }
-
-    // Make first character the end barrier
-    *(uint16_t *)TERM_VIDMEM_START =
-        TERM_MSAFE_COLORMASK | TERM_MSAFE_ENDBARRIER;
 }
 
-int terminal_log(char *message)
+void terminal_setchar(int x, int y, terminal_char tchar)
 {
-    // Try to find the last barrier
-    uint16_t *pos = terminal_findchar( TERM_MSAFE_ENDBARRIER );
-    if (!pos) {
-        // Tell user there's an error and return 1
-        terminal_simplewrite("Error writing message as memsafe!", 0);
-        return 1;
-    }
-
-    // Replace the endbarrier with a regular barrier
-    *pos = TERM_MSAFE_COLORMASK | TERM_MSAFE_BARRIER;
-    pos++; // Move up a character
-
-    // Write new message
-   pos = terminal_maskedwrite(message, TERM_MSAFE_COLORMASK, pos);
-
-   // Put Endbarrier after
-   *pos = TERM_MSAFE_COLORMASK | TERM_MSAFE_ENDBARRIER;
-
-   return 0;
+    int pos = getpos(x,y);
+    if (pos<0)
+        return;
+    TERM_VIDMEM_START[pos] = tchar;
 }
 
+void terminal_movecursor(int x, int y)
+{
+    int pos = getpos(x,y);
+    uint8_t low = (uint8_t)(pos&0xFF);
+    uint8_t high = (uint8_t)( (pos>>8)&0xFF );
+    outb(0x3D4,0x0F);
+    outb(0x3D5,low);
+    outb(0x3D4,0x0E);
+    outb(0x3D5,high);
+}
+
+//
+// Boxwrite Functions
+//  Writes to terminal in a box with properties and cursor position stored in
+//  a terminal_box struct
+//
+
+//
+// Writing Functions
+//  When passing strings to these functions the following characters are treated
+//  special:
+//   0x11 - color will be changed to byte following this
+//   0x12 - next 2 bytes will be placed in memory as is
+//          (WARNING: this includes 0x0000. If used improperly string may not
+//                    terminate!)
+//
+
+void terminal_boxwritenewline(terminal_box *box)
+{
+    box->cx = box->x1;
+    box->cy++;
+    if ( box->cy > box->y2 )
+        box->cy = box->y1;
+}
+
+void terminal_boxwritefullchar(terminal_box *box, terminal_char tchar)
+{
+    // Check to make sure we're in bounds
+    if ( box->cx < box->x1 || box->cx > box->x2 ||
+         box->cy < box->y1 || box->cy > box->y2 ) {
+        // Out of bounds. Mark in red where problem is.
+        terminal_setchar(box->cx,box->cy, 0x4420);
+        return;
+    }
+    // Write the character and incriment pointer
+    terminal_setchar(box->cx,box->cy,tchar);
+    box->cx++;
+    // Carry over if we overrun the bounds
+    if ( box->cx > box->x2 )
+        terminal_boxwritenewline(box);
+    // If necessary, move the cursor
+    if (box->hascursor)
+        terminal_movecursor(box->cx,box->cy);
+}
+
+void terminal_boxwritechar(terminal_box *box, char c)
+{
+    switch (c) {
+        case '\n':
+            terminal_boxwritenewline(box);
+            break;
+        default:
+            terminal_boxwritefullchar(box,(terminal_char)(box->color|c));
+            break;
+    }
+}
+
+void terminal_boxwrite(terminal_box *box, char *text)
+{
+    // The following characters are handled as special:
+    //  0x11 - color will be changed to byte following this
+    //  0x12 - next byte will be written in exactly as char
+    //  0x13 - next 2 bytes will be written in exactly as terminal_char
+    //  WARNING: If bytes used following these are 0, string will not be escaped
+    while ( *text )
+    {
+        if ( *text == 0x11 ) {
+            text++;
+            box->color = (uint16_t)(*text<<8);
+            text++;
+        } else if ( *text == 0x12 ) {
+            text++;
+            terminal_boxwritechar(box, *text);
+            text++;
+        } else if ( *text == 0x13 ) {
+            uint8_t low  = *(++text);
+            uint8_t high = *(++text);
+            terminal_char full = (terminal_char)( (high<<8) & low );
+            terminal_boxwritefullchar(box,full);
+            text++;
+        } else {
+            terminal_boxwritechar(box, *text);
+            text++;
+        }
+    }
+}
+
+//
+// Reading Functions
+//  Blocking functions that reads from PS2 Keyboard
+//
+
+// Keymap for US keyboard
+//   uppercase - keydown
+//   lowercase - keyup
+static char keymap[] = {
+    /* 0x00 - 0x07 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    /* 0x08 - 0x0F */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    /* 0x10 - 0x17 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    /* 0x18 - 0x1F */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    /* 0x20 - 0x27 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    /* 0x28 - 0x2F */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    /* 0x30 - 0x37 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    /* 0x38 - 0x3F */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    /* 0x40 - 0x47 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    /* 0x48 - 0x4F */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    /* 0x50 - 0x57 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    /* 0x58 - 0x5F */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    /* 0x60 - 0x67 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    /* 0x68 - 0x6F */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    /* 0x70 - 0x77 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    /* 0x78 - 0x7F */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    /* 0x80 - 0x87 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    /* 0x88 - 0x8F */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    /* 0x90 - 0x97 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    /* 0x98 - 0x9F */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    /* 0xA0 - 0xA7 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    /* 0xA8 - 0xAF */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    /* 0xB0 - 0xB7 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    /* 0xB8 - 0xBF */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    /* 0xC0 - 0xC7 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    /* 0xC8 - 0xCF */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    /* 0xD0 - 0xD7 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    /* 0xD8 - 0xDF */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    /* 0xE0 - 0xE7 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    /* 0xE8 - 0xEF */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    /* 0xF0 - 0xF7 */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+    /* 0xF8 - 0xFF */ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+
+char terminal_boxread(terminal_box *box)
+{
+    uint8_t c;
+    while (1) {
+        c = inb(0x60);
+        if ( keymap[c] ) {
+            terminal_boxwritechar(box, keymap[c]);
+        }
+    }
+}

@@ -211,6 +211,7 @@ start_32:
     mov es, ax
 
     ; Copy Kernel to its proper place
+    cli
     mov cx, 0x1000
     mov esi, 0x1000
     mov edi, 0x100000

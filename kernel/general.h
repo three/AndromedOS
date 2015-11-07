@@ -6,6 +6,7 @@
 
 typedef long size_t;
 
-uint16_t general_base16ify(uint8_t dbyte);
+void outb(uint16_t port, uint8_t val);
+uint8_t inb(uint16_t port);
 
 size_t strlen(char *str);

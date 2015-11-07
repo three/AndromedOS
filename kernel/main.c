@@ -4,6 +4,7 @@
 
 #include "terminal.h"
 #include "memory.h"
+#include "shell.h"
 
 void kprint(char * str);
 void clearscreen(void);
@@ -15,6 +16,5 @@ void kmain(void)
 {
     terminal_init();
     memory_init();
-    terminal_log("AndromedOS loaded Successfully!");
-    terminal_log("Initialization Complete.");
+    shell_init();
 }
