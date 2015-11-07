@@ -12,7 +12,7 @@ CFLAGS=-m32 -g -ffreestanding -nostdlib -lgcc -Wall -Wextra
 
 LD=i686-elf-ld
 
-KOBJS=entry.o main.o memory.o terminal.o general.o shell.o
+KOBJS=entry.o main.o log.o memory.o terminal.o general.o shell.o
 KDEPS=$(addprefix kernel/, $(KOBJS))
 
 export PATH := deps/bin:$(PATH)

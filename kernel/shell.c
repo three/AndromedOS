@@ -6,11 +6,16 @@
 #include "shell.h"
 
 #include "terminal.h"
+#include "log.h"
 
 #define SHELL_COLOR_BORDER  ((shell_color)0xF000)
 #define SHELL_COLOR_LOG     ((shell_color)0xF800)
 #define SHELL_COLOR_WARN    ((shell_color)0xE800)
 #define SHELL_COLOR_ERROR   ((shell_color)0x4800)
+
+//
+// Shell Boundries
+//
 
 static terminal_box shell1box = {
     .x1 = 1,
@@ -32,6 +37,10 @@ static terminal_box shell2box = {
     .color = 0,
     .hascursor = 0,
 };
+
+//
+// Static Functions
+//
 
 static void drawborder()
 {
@@ -56,21 +65,46 @@ static void drawborder()
     terminal_setchar(x,24,0xCA|SHELL_COLOR_BORDER);
 }
 
-static void startprompt()
+static terminal_box *getshellbox(int id)
 {
-    shell1box.color = SHELL_COLOR_LOG;
-    terminal_boxwrite(&shell1box, "\n> ");
+    if ( id == 1 )
+        return &shell1box;
+    if ( id == 2 )
+        return &shell2box;
+    kthrow("Could not find box!");
 }
+
+//
+// Logging Functions
+//
 
 void shell_log(char *text)
 {
     shell2box.color = SHELL_COLOR_LOG;
     terminal_boxwrite(&shell2box, text);
-    terminal_boxwritechar(&shell2box, '\n');
+    terminal_boxwritenewline(&shell2box);
+}
+void shell_warn(char *text)
+{
+    shell2box.color = SHELL_COLOR_WARN;
+    terminal_boxwrite(&shell2box, text);
+    terminal_boxwritenewline(&shell2box);
+}
+void shell_error(char *text)
+{
+    shell2box.color = SHELL_COLOR_ERROR;
+    terminal_boxwrite(&shell2box, text);
+    terminal_boxwritenewline(&shell2box);
+}
+void shell_tell(char *text)
+{
+    shell1box.color = SHELL_COLOR_LOG;
+    terminal_boxwrite(&shell1box, text);
 }
 
-void shell_logbytes(uint8_t *bytes, int length)
+void shell_logbytes(uint8_t *bytes, int length, int shell)
 {
+    terminal_box *box = getshellbox(shell);
     for (int i=0;i<length;i++) {
         uint8_t byte = bytes[i];
         terminal_boxwrite(&shell2box,"  0x");
@@ -89,20 +123,27 @@ void shell_logbytes(uint8_t *bytes, int length)
     }
 }
 
+//
+// Prompt
+//
+
+void shell_start()
+{
+    shell1box.color = SHELL_COLOR_LOG;
+    terminal_boxwrite(&shell1box, "\n> ");
+    terminal_boxread(&shell1box);
+}
+
+//
+// Initialization
+//
+
 void shell_init()
 {
     drawborder();
-    startprompt();
 
-    shell_log("AndromedOS Started Successfully!");
-    shell_log("Here is what the integer 0xABCDEF01 looks like in memory:");
-    unsigned int t1 = 0xABCDEF01;
-    shell_logbytes((unsigned char *)&t1, sizeof(t1));
-    shell_log("Here are special terminal-specific characters not in ASCII:");
-    shell_log("   \x12\x10\x12\x11\x12\x12");
-    shell_log(" \x11\xA3 Many \x11\xC5 Different \x11\xE7 Colors! ");
-
-    while (1) {
-        terminal_boxread(&shell1box);
-    }
+    klog_set(&shell_log);
+    kwarn_set(&shell_warn);
+    kerror_set(&shell_error);
+    ktell_set(&shell_tell);
 }
