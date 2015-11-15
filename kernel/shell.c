@@ -72,6 +72,7 @@ static terminal_box *getshellbox(int id)
     if ( id == 2 )
         return &shell2box;
     kthrow("Could not find box!");
+    return 0;
 }
 
 //
@@ -107,7 +108,7 @@ void shell_logbytes(uint8_t *bytes, int length, int shell)
     terminal_box *box = getshellbox(shell);
     for (int i=0;i<length;i++) {
         uint8_t byte = bytes[i];
-        terminal_boxwrite(&shell2box,"  0x");
+        terminal_boxwrite(box,"  0x");
 
         uint8_t low  = 0x0F&byte;
         uint8_t high = (0xF0&byte)>>4;
@@ -115,11 +116,11 @@ void shell_logbytes(uint8_t *bytes, int length, int shell)
         low  = (low  > 57)?(low  + 7):low;
         high = (high > 57)?(high + 7):high;
 
-        terminal_boxwritechar(&shell2box, high);
-        terminal_boxwritechar(&shell2box, low);
+        terminal_boxwritechar(box, high);
+        terminal_boxwritechar(box, low);
 
         if ( (i%6) == 5 || i+1>=length )
-            terminal_boxwritenewline(&shell2box);
+            terminal_boxwritenewline(box);
     }
 }
 
