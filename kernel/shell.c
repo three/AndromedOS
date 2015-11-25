@@ -130,9 +130,15 @@ void shell_logbytes(uint8_t *bytes, int length, int shell)
 
 void shell_start()
 {
+    char buffer[256];
+
     shell1box.color = SHELL_COLOR_LOG;
-    terminal_boxwrite(&shell1box, "\n> ");
-    terminal_boxread(&shell1box);
+
+    while (1) {
+        terminal_boxwrite(&shell1box, "\necho> ");
+        terminal_boxread(&shell1box, &(buffer[0]), sizeof(buffer));
+        terminal_boxwrite(&shell1box, buffer);
+    }
 }
 
 //
@@ -142,6 +148,9 @@ void shell_start()
 void shell_init()
 {
     drawborder();
+
+    shell1box.color = SHELL_COLOR_LOG;
+    shell2box.color = SHELL_COLOR_LOG;
 
     klog_set(&shell_log);
     kwarn_set(&shell_warn);

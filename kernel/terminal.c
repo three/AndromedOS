@@ -275,6 +275,8 @@ static char findASCII(char c)
     // Backspace
     if ( c == 0x3D )
         return '\b';
+    if ( c == 0x37 )
+        return '\n';
 
     // Key doesn't have a corresponding ASCII character
     return 0;
@@ -310,16 +312,34 @@ static char waitforkey()
     return 0;
 }
 
-char terminal_boxread(terminal_box *box)
+char terminal_boxread(terminal_box *box, char *buffer, int buffsize)
 {
+    int bpos = 0; //buffer position
+    if ( buffsize <= 0 )
+        return 1; // Invalid buffer size
+
     while (1) {
-        char k = waitforkey();
+        char k = waitforkey(); // Blocking
         char a = findASCII( k&0x7F );
-        if ( a && k&0x80 ) {
-            if ( a == '\b' )
+
+        // Key was not pressed down
+        if ( !(k&0x80) )
+            continue;
+
+        if ( a == '\b' ) {
+            if ( bpos > 0 ) {
                 terminal_boxwriteback(box);
-            else
-                terminal_boxwritechar(box,a);
+                bpos--;
+            }
+        } else if ( a == '\n' ) {
+            terminal_boxwritenewline(box);
+            buffer[bpos] = 0;
+            return 0;
+        } else if ( a && bpos <= buffsize-2 ) {
+            terminal_boxwritechar(box,a);
+            buffer[bpos] = a;
+            bpos++;
         }
     }
+    return 1;
 }

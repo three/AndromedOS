@@ -31,4 +31,4 @@ void terminal_boxwriteback(terminal_box *box);
 void terminal_boxwritechar(terminal_box *box, char c);
 void terminal_boxwrite(terminal_box *box, char *text);
 
-char terminal_boxread(terminal_box *box);
+char terminal_boxread(terminal_box *box, char *buffer, int buffsize);
