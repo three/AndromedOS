@@ -22,10 +22,12 @@ typedef struct {
 void terminal_init();
 
 void terminal_setchar(int x, int y, terminal_char c);
+uint16_t terminal_getchar(int x, int y);
 void terminal_movecursor(int x, int y);
 
 void terminal_boxwritenewline(terminal_box *box);
 void terminal_boxwritefullchar(terminal_box *box, terminal_char tchar);
+void terminal_boxwriteback(terminal_box *box);
 void terminal_boxwritechar(terminal_box *box, char c);
 void terminal_boxwrite(terminal_box *box, char *text);
 

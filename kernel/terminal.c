@@ -46,6 +46,16 @@ void terminal_setchar(int x, int y, terminal_char tchar)
     TERM_VIDMEM_START[pos] = tchar;
 }
 
+uint16_t terminal_getchar(int x, int y)
+{
+    terminal_char c;
+    int pos = getpos(x,y);
+    if (pos<0)
+        return 0;
+    c = TERM_VIDMEM_START[pos];
+    return c;
+}
+
 void terminal_movecursor(int x, int y)
 {
     int pos = getpos(x,y);
@@ -79,6 +89,27 @@ void terminal_boxwritenewline(terminal_box *box)
     box->cy++;
     if ( box->cy > box->y2 )
         box->cy = box->y1;
+}
+
+void terminal_boxwriteback(terminal_box *box)
+{
+    terminal_char c;
+    if ( box->cx == box->x1 ) {
+        box->cx = box->x2;
+        box->cy--;
+        if ( box->cy < box->y1 )
+            box->cy = box->y2;
+    } else {
+        box->cx--;
+    }
+
+    c = terminal_getchar(box->cx, box->cy);
+    c &= 0xFF00;
+    c |= (' '<<8);
+    terminal_setchar(box->cx, box->cy, c);
+
+    if ( box->hascursor )
+        terminal_movecursor(box->cx, box->cy);
 }
 
 void terminal_boxwritefullchar(terminal_box *box, terminal_char tchar)
@@ -241,6 +272,9 @@ static char findASCII(char c)
     // Spacebar
     if ( c == 0x3E )
         return ' ';
+    // Backspace
+    if ( c == 0x3D )
+        return '\b';
 
     // Key doesn't have a corresponding ASCII character
     return 0;
@@ -281,7 +315,11 @@ char terminal_boxread(terminal_box *box)
     while (1) {
         char k = waitforkey();
         char a = findASCII( k&0x7F );
-        if ( a && k&0x80 )
-            terminal_boxwritechar(box,a);
+        if ( a && k&0x80 ) {
+            if ( a == '\b' )
+                terminal_boxwriteback(box);
+            else
+                terminal_boxwritechar(box,a);
+        }
     }
 }
