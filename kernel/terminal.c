@@ -282,6 +282,15 @@ static char findASCII(char c)
     return 0;
 }
 
+static uint8_t ps2in()
+{
+    uint8_t resp = inb(0x60);
+    uint8_t status = inb(0x64);
+    if ( status & 0x20 ) // Ignore mouse input
+        return 0x00;
+    return resp;
+}
+
 static char waitforkey()
 {
     // Returns when a key is pressed or released
@@ -289,7 +298,7 @@ static char waitforkey()
     uint8_t pbit, ofbyte, ofbit;
     uint8_t mbit, mbyte;
     while (1) {
-        res = keymap[inb(0x60)];
+        res = keymap[ps2in()];
         if ( !(res&0x7F) )
             continue;
 
