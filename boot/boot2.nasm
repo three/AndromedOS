@@ -107,12 +107,7 @@ DetectUpperMemory:
     mov ecx, 24 ; Always ask for 24 bytes
 
     ; Zero where memory map should go
-    mov dword [es:di],    0
-    mov dword [es:di+4],  0
-    mov dword [es:di+8],  0
-    mov dword [es:di+12], 0
-    mov dword [es:di+16], 0
-    mov dword [es:di+20], 1 ; Ensure valid ACPI code
+    call .zero
 
     ; Clear Carry Flag
     clc
@@ -136,6 +131,15 @@ DetectUpperMemory:
     ; Do it again
     jmp .call_e820
 
+.zero:
+    mov dword [es:di],    0
+    mov dword [es:di+4],  0
+    mov dword [es:di+8],  0
+    mov dword [es:di+12], 0
+    mov dword [es:di+16], 0
+    mov dword [es:di+20], 1 ; Ensure valid ACPI code
+    ret
+
 .large:
     ; Set "too large" flag
     mov eax, [0x38000]
@@ -150,6 +154,7 @@ DetectUpperMemory:
     ; If eax == Magic, function exited successfully
     cmp eax, 0x534D4150
     jne .fail
+    call .zero ;Zero entry signals termination
     clc
     ret
 
