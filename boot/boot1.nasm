@@ -32,20 +32,18 @@ diskpacket:
 times 256 - ($-$$) db 0
 
 start:
-    ; Store any registers we want to keep
-    mov byte [drive], dl
-
-    ; If drive is 0, set to 0x80
-    cmp byte [drive], 0
-    jne .regc
-    mov byte [drive], 0x80
-.regc:
-
     ; Reset segment registers
+    cli
     xor ax, ax
     mov ds, ax
-    mov ss, ax
     mov es, ax
+    mov ss, ax
+    mov sp, 0x7C00
+    mov bp, 0x7C00
+    sti
+
+    ; Store any registers we want to keep
+    mov byte [drive], dl
     jmp load_stage2
 
 fail:
@@ -111,10 +109,10 @@ load_stage2:
 
     ; Reset Disk
     xor ax, ax
-    mov dl, 0x80
+    mov dl, [drive]
     int 13h
     inc dl
-    mov ah, 0x80
+    mov ah, [drive]
     mov al, 'E' ;Error Letter E
     cmp cl, 0
     je fail

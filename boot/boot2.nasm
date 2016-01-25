@@ -6,7 +6,8 @@ ORG 0x800
 BITS 16
 
 start:
-    mov esp, 0x80000 ;Setup stack
+    mov esp, 0x8000 ;Setup stack
+    mov ebp, 0x8000
 
     ; Let user know Boot2 has successfully loaded
     mov si, bootWelcome
@@ -19,6 +20,8 @@ start:
     call Print
     jmp Hang
 .A20success:
+    mov si, succs_A20
+    call Print
 
     ; Detect Memory
     call DetectUpperMemory
@@ -27,6 +30,8 @@ start:
     call Print
     jmp Hang
 .MemSuccess:
+    mov si, succs_memory
+    call Print
 
     ; Load GDT
     call LoadGDT
@@ -35,6 +40,8 @@ start:
     call Print
     jmp Hang
 .GDTSuccess:
+    mov si, succs_GDT
+    call Print
 
     ; Enter Protected Mode
     jmp EnterProtected ;After entering protected, will jump to start_32
@@ -183,8 +190,11 @@ EnterProtected:
 bootWelcome db "Boot 2 loaded.",0
 
 error_A20 db "Failed to turn on A20.",0
+succs_A20 db "A20 Loaded Successfully.",0
 error_memory db "Failed to properly detect memory",0
+succs_memory db "Memorly Detected Successfully.",0
 error_GDT db "Failed to load GDT",0
+succs_GDT db "GDT loaded successfully",0
 
 align 4
 gdt:
@@ -206,14 +216,15 @@ gdt_desc:
 BITS 32
 
 start_32:
-    mov dword [0xB809C], 0xF032F033 ; Print "32" at top right corner
-
     ; Setup 32-bit segment registers
-    mov ax, 0x10
+    mov ax, (gdt_data-gdt)
     mov ds, ax
-    mov ss, ax
-    xor ax, ax
     mov es, ax
+    mov ss, ax
+    mov esp, 0x80000
+    mov ebp, 0x80000
+
+    mov dword [0xB809C], 0xF032F033 ; Print "32" at top right corner
 
     ; Copy Kernel to its proper place
     cli
