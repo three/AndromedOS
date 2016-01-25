@@ -35,6 +35,12 @@ start:
     ; Store any registers we want to keep
     mov byte [drive], dl
 
+    ; If drive is 0, set to 0x80
+    cmp byte [drive], 0
+    jne .regc
+    mov byte [drive], 0x80
+.regc:
+
     ; Reset segment registers
     xor ax, ax
     mov ds, ax
@@ -45,9 +51,6 @@ start:
 fail:
     ; Setup error code (stored in ah)
     ; Error letter (stored in al). followed by hexified error code will print
-    cmp ah, 0
-    je .fail_init
-
     mov [errorletter], al
 
     mov al, ah
@@ -96,16 +99,53 @@ hang:
 
 load_stage2:
     ; Copy the first 5 sectors of the disk (boot1+boot2) to 0x600
+
+    ; Check INT13 extensions
+    mov ah, 41h
+    mov dl, [drive]
+    mov bx, 0x55AA
+    int 13h
+    mov ah, [drive]
+    mov al, 'D' ;Error Letter D
+    jnc .lba
+
+    ; Reset Disk
+    xor ax, ax
+    mov dl, 0x80
+    int 13h
+    inc dl
+    mov ah, 0x80
+    mov al, 'E' ;Error Letter E
+    cmp cl, 0
+    je fail
+
+.chs:
+    ; CHS
+    mov ah, 02h
+    mov al, 15
+    mov ch, 0
+    mov cl, 1
+    mov dh, 0
+    mov dl, 0x80
+    mov bx, 0x600
+    int 13h
+    mov al, 'C' ;Error Letter C
+    jc fail
+    jmp check_stage2
+
+.lba:
+    ; LBA
     mov ah, 42h
     mov dl, [drive]
     mov si, diskpacket
     int 13h
-    mov al, 'A'
+    mov al, 'A' ;Error Letter A
     jc fail
 
 check_stage2:
     ; If the disk was read correctly then memory 0x7d00-0x7e00 (text from
-    ; boot1) should be the same as 0x700-0x800.
+    ; boot1) should be the same as 0x700-0x800. (0x7c00-0xd00 contains writable
+    ; variables)
     mov si, 0x700
     mov ax, 0x0142 ;Error letter B, code 0x01
 .check_loop:
