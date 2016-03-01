@@ -3,4 +3,4 @@
 *.log
 *.gz
 kernel/debug.elf
-deps/*
+deps/
