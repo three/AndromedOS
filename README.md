@@ -36,6 +36,10 @@ build AndromedOS without affecting the rest of your system. If you want to use a
 compiler already on your system of a different name, make symbolic links to the
 correct destinations.
 
+A prebuilt compiler is available with GCC 5.3.0 and Binutils 2.26.20160125
+[here](https://mega.nz/#!FsICwAQZ!-eJE6F3Rc9E64JLSWaQwU_Wjs6PEOs5prxZKdQzj7JQ)
+(SHA256 `cf14b4e758557be888d503c8a39e293a4027bce914ca2c4460d8d3502bacedc0`).
+
 ## Contributing
 
 AndromedOS is a personal project with all code written solely by me. I am not
