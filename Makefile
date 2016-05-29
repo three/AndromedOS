@@ -8,7 +8,7 @@ define QEMUdebug =
 endef
 
 CC=i686-elf-gcc
-CFLAGS=-m32 -g -ffreestanding -nostdlib -lgcc -Wall -Wextra
+CFLAGS=-std=gnu11 -m32 -g -ffreestanding -nostdlib -lgcc -Wall -Wextra
 
 LD=i686-elf-ld
 
